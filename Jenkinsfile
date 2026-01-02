@@ -10,41 +10,34 @@ pipeline {
 
         stage('Clone Repo') {
             steps {
-                echo "Cloning GitHub repository"
                 checkout scm
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo "Building Docker image"
                 sh '''
                 docker build -t $IMAGE_NAME:$IMAGE_TAG .
                 '''
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Login & Push to Docker Hub') {
             steps {
-                echo "Logging in to Docker Hub"
-                sh '''
-                echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                '''
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                echo "Pushing image to Docker Hub"
-                sh '''
-                docker push $IMAGE_NAME:$IMAGE_TAG
-                '''
+                withCredentials([
+                    string(credentialsId: 'DOCKERHUB_USERNAME', variable: 'DH_USER'),
+                    string(credentialsId: 'DOCKERHUB_PASSWORD', variable: 'DH_PASS')
+                ]) {
+                    sh '''
+                    echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
+                    docker push $IMAGE_NAME:$IMAGE_TAG
+                    '''
+                }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                echo "Deploying to Kubernetes"
                 sh '''
                 kubectl apply -f k8s/deployment.yaml
                 kubectl apply -f k8s/service.yaml
@@ -58,8 +51,7 @@ pipeline {
             echo "✅ CI/CD Pipeline completed successfully"
         }
         failure {
-            echo "❌ Pipeline failed"
+            echo "❌ CI/CD Pipeline failed"
         }
     }
 }
-
