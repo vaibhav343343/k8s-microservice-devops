@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "vaibzz7219/flask-microservice"
-        TAG = "latest"
+        IMAGE_TAG  = "latest"
     }
 
     stages {
@@ -16,25 +16,24 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:$TAG .'
+                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Login & Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DH_USER',
+                        passwordVariable: 'DH_PASS'
+                    )
+                ]) {
+                    sh '''
+                      echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
+                      docker push $IMAGE_NAME:$IMAGE_TAG
+                    '''
                 }
-            }
-        }
-
-        stage('Push Image to Docker Hub') {
-            steps {
-                sh 'docker push $IMAGE_NAME:$TAG'
             }
         }
 
@@ -47,10 +46,11 @@ pipeline {
 
     post {
         success {
-            echo "✅ CI/CD Pipeline SUCCESS"
+            echo "✅ CI/CD Pipeline completed successfully"
         }
         failure {
-            echo "❌ CI/CD Pipeline FAILED"
+            echo "❌ CI/CD Pipeline failed"
         }
     }
 }
+
