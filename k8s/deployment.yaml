@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: flask-container
-        image: vaibhav343343/flask-microservice:latest
+        image: vaibzz7219/flask-microservice:latest
         ports:
         - containerPort: 5000
 

@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "vaibhav343343/flask-microservice"
+        IMAGE_NAME = "vaibzz7219/flask-microservice"
         IMAGE_TAG  = "latest"
     }
 
