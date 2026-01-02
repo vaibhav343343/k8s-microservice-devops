@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "vaibzz7219/flask-microservice"
-        IMAGE_TAG  = "latest"
+        TAG = "latest"
     }
 
     stages {
@@ -16,42 +16,41 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                docker build -t $IMAGE_NAME:$IMAGE_TAG .
-                '''
+                sh 'docker build -t $IMAGE_NAME:$TAG .'
             }
         }
 
-        stage('Login & Push to Docker Hub') {
+        stage('Login to Docker Hub') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'DOCKERHUB_USERNAME', variable: 'DH_USER'),
-                    string(credentialsId: 'DOCKERHUB_PASSWORD', variable: 'DH_PASS')
-                ]) {
-                    sh '''
-                    echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
-                    docker push $IMAGE_NAME:$IMAGE_TAG
-                    '''
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                 }
+            }
+        }
+
+        stage('Push Image to Docker Hub') {
+            steps {
+                sh 'docker push $IMAGE_NAME:$TAG'
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                kubectl apply -f k8s/deployment.yaml
-                kubectl apply -f k8s/service.yaml
-                '''
+                sh 'kubectl apply -f k8s/'
             }
         }
     }
 
     post {
         success {
-            echo "✅ CI/CD Pipeline completed successfully"
+            echo "✅ CI/CD Pipeline SUCCESS"
         }
         failure {
-            echo "❌ CI/CD Pipeline failed"
+            echo "❌ CI/CD Pipeline FAILED"
         }
     }
 }
