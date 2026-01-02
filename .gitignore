@@ -1,0 +1,4 @@
+venv/
+minikube-linux-amd64
+__pycache__/
+
